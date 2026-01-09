@@ -23,6 +23,7 @@
             IMP.certification({
                 pg: "inicis_unified", // 계약한 PG사명으로 수정
                 merchant_uid: "cert_" + new Date().getTime(),
+                m_redirect_url: "https://karaoke-auth.vercel.app/api/verify"
             }, function (rsp) {
                 if (rsp.success) {
                     // 내 Vercel 주소의 /api/verify로 보냄
