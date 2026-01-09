@@ -21,7 +21,7 @@
 
         function requestCert() {
             IMP.certification({
-                pg: "inicis_unified", // 계약한 PG사명으로 수정
+                pg: "danal", // 계약한 PG사명으로 수정
                 merchant_uid: "cert_" + new Date().getTime(),
             }, function (rsp) {
                 if (rsp.success) {
