@@ -1,4 +1,5 @@
 from fastapi import FastAPI, HTTPException, Request
+from fastapi.responses import FileResponse
 from pydantic import BaseModel
 import requests
 import datetime
@@ -63,3 +64,7 @@ async def verify_user(data: CertData):
 @app.get("/api")
 async def root():
     return {"message": "노래방 인증 서버가 정상 작동 중입니다."}
+
+@app.get("/")
+async def read_index():
+    return FileResponse('index.html')
