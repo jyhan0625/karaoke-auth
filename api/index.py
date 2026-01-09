@@ -1,0 +1,65 @@
+from fastapi import FastAPI, HTTPException, Request
+from pydantic import BaseModel
+import requests
+import datetime
+import os
+
+app = FastAPI()
+
+# 환경변수 (나중에 Vercel 설정창에서 입력할 값들입니다)
+PORTONE_API_KEY = os.environ.get("PORTONE_API_KEY")
+PORTONE_API_SECRET = os.environ.get("PORTONE_API_SECRET")
+TELEGRAM_TOKEN = os.environ.get("TELEGRAM_TOKEN")
+OWNER_CHAT_ID = os.environ.get("OWNER_CHAT_ID")
+
+
+def get_portone_token():
+    url = "https://api.iamport.kr/users/getToken"
+    payload = {"imp_key": PORTONE_API_KEY, "imp_secret": PORTONE_API_SECRET}
+    res = requests.post(url, json=payload).json()
+    return res['response']['access_token']
+
+
+def is_adult(birth_str):
+    birth_date = datetime.datetime.strptime(birth_str, "%Y-%m-%d")
+    today = datetime.date.today()
+    age = today.year - birth_date.year - ((today.month, today.day) < (birth_date.month, birth_date.day))
+    return age >= 19
+
+
+def send_telegram(message):
+    url = f"https://api.telegram.org/bot{TELEGRAM_TOKEN}/sendMessage"
+    requests.post(url, json={"chat_id": OWNER_CHAT_ID, "text": message})
+
+
+class CertData(BaseModel):
+    imp_uid: str
+
+
+@app.post("/api/verify")
+async def verify_user(data: CertData):
+    token = get_portone_token()
+    cert_url = f"https://api.iamport.kr/certifications/{data.imp_uid}"
+    headers = {"Authorization": token}
+    cert_res = requests.get(cert_url, headers=headers).json()
+
+    if cert_res['code'] != 0:
+        raise HTTPException(status_code=400, detail="인증 정보 조회 실패")
+
+    user_info = cert_res['response']
+    name = user_info['name']
+    birth = user_info['birthday']
+    phone = user_info['phone']
+
+    if is_adult(birth):
+        msg = f"🔔 [성인인증 완료]\n👤 성함: {name}\n📅 생년월일: {birth}\n📱 연락처: {phone}\n\n입장을 허용해 주세요."
+        send_telegram(msg)
+        return {"status": "success", "message": "인증 성공! 입장이 가능합니다."}
+    else:
+        return {"status": "fail", "message": "미성년자는 야간 출입이 불가능합니다."}
+
+
+# Vercel이 인식할 수 있도록 추가
+@app.get("/api")
+async def root():
+    return {"message": "노래방 인증 서버가 정상 작동 중입니다."}

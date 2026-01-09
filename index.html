@@ -1,0 +1,45 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>노래방 성인인증</title>
+    <script src="https://cdn.iamport.kr/v1/iamport.js"></script>
+    <style>
+        body { font-family: sans-serif; text-align: center; padding-top: 50px; }
+        button { padding: 20px 40px; font-size: 20px; background-color: #007bff; color: white; border: none; border-radius: 10px; cursor: pointer; }
+    </style>
+</head>
+<body>
+    <h2>🌙 야간 성인인증</h2>
+    <p>토스/PASS로 본인인증 후 입장해주세요.</p>
+    <button onclick="requestCert()">성인인증 시작하기</button>
+
+    <script>
+        var IMP = window.IMP;
+        IMP.init("포트원_가맹점_식별코드"); // 관리자 콘솔에서 확인하여 수정
+
+        function requestCert() {
+            IMP.certification({
+                pg: "inicis_unified", // 계약한 PG사명으로 수정
+                merchant_uid: "cert_" + new Date().getTime(),
+            }, function (rsp) {
+                if (rsp.success) {
+                    // 내 Vercel 주소의 /api/verify로 보냄
+                    fetch("/api/verify", {
+                        method: "POST",
+                        headers: { "Content-Type": "application/json" },
+                        body: JSON.stringify({ imp_uid: rsp.imp_uid })
+                    })
+                    .then(res => res.json())
+                    .then(data => {
+                        alert(data.message);
+                    });
+                } else {
+                    alert("인증 실패: " + rsp.error_msg);
+                }
+            });
+        }
+    </script>
+</body>
+</html>
